@@ -2,7 +2,7 @@
   "swagger": "3.0.4",
   "info": {
     "title": "web-scraping.dev by Scrapfly",
-    "version": "0.1.0"
+    "version": "1.0.27"
   },
   "basePath": "/",
   "schemes": [
