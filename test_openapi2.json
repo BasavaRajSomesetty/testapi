@@ -1,5 +1,5 @@
 {
-  "swagger": "2.0",
+  "swagger": "3.0.4",
   "info": {
     "title": "web-scraping.dev by Scrapfly",
     "version": "0.1.0"
