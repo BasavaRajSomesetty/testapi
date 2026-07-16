@@ -1,0 +1,1214 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "web-scraping.dev by Scrapfly",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/products": {
+      "get": {
+        "summary": "Product Paging Get",
+        "description": "Product pagination by page number through a get parameter. Valid pages are 1-6",
+        "operationId": "product_paging_get_api_products_get",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "exclusiveMaximum": 6,
+              "exclusiveMinimum": 0,
+              "description": "The page number to return, max 5",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "The page number to return, max 5"
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "type": "string",
+              "description": "Sort order. This is useful for getting around paging limit of 25 products (total is 28)",
+              "default": "asc",
+              "title": "Order"
+            },
+            "description": "Sort order. This is useful for getting around paging limit of 25 products (total is 28)"
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "apparel",
+                    "consumables",
+                    "household"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Category"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagingPage"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Product Paging Post",
+        "description": "Product pagination by page number submitted through a JSON POST. Valid pages are 1-6",
+        "operationId": "product_paging_post_api_products_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PagePaging"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagingPage"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/product": {
+      "get": {
+        "summary": "Product Get",
+        "description": "returns product data for given numeric id. Available ids are: 1 to 28",
+        "operationId": "product_get_api_product_get",
+        "parameters": [
+          {
+            "name": "product_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "exclusiveMaximum": 29,
+              "exclusiveMinimum": 0,
+              "description": "The id of the product you want to get reviews for",
+              "title": "Product Id"
+            },
+            "description": "The id of the product you want to get reviews for",
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Product"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Product Post",
+        "description": "returns product data for given numeric id through JSON post. Available ids are: 1 to 28\nThis endpoint also supports multi product return if product `id` is a list of ids like `[1,2,3]`",
+        "operationId": "product_post_api_product_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductQuery"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/Product"
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Product"
+                      }
+                    }
+                  ],
+                  "title": "Response Product Post Api Product Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reviews": {
+      "get": {
+        "summary": "Review Paging Get",
+        "description": "Review pagination by page number through a get parameter\n\nThe review paging endpoint is protected by a CSRF header requirement.\nThe expected values are:\n```\n{\n    \"X-Csrf-Token\": \"secret-csrf-token-123\",\n}\n```\n\nNote that /docs API player cannot override the Referer header the browser is sending\nso this endpoint will not work in the API player.",
+        "operationId": "review_paging_get_api_reviews_get",
+        "parameters": [
+          {
+            "name": "product_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "exclusiveMaximum": 29,
+              "exclusiveMinimum": 0,
+              "description": "The id of the product you want to get reviews for",
+              "title": "Product Id"
+            },
+            "description": "The id of the product you want to get reviews for",
+            "example": 1
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "description": "The page number to return, there's no paging limit for reviews",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "The page number to return, there's no paging limit for reviews"
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "type": "string",
+              "default": "asc",
+              "title": "Order"
+            }
+          },
+          {
+            "name": "x-csrf-token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "cross site forgery token. It's static in web-scraping.dev",
+              "title": "X-Csrf-Token"
+            },
+            "description": "cross site forgery token. It's static in web-scraping.dev",
+            "example": "secret-csrf-token-123"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagingPage"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/review": {
+      "get": {
+        "summary": "Review Get",
+        "description": "returns product's review data. Requires product id and available ids are: 1 to 28",
+        "operationId": "review_get_api_review_get",
+        "parameters": [
+          {
+            "name": "product_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "exclusiveMaximum": 29,
+              "exclusiveMinimum": 0,
+              "description": "The id of the product you want to get reviews for",
+              "title": "Product Id"
+            },
+            "description": "The id of the product you want to get reviews for",
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Review"
+                  },
+                  "title": "Response Review Get Api Review Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/testimonials": {
+      "get": {
+        "summary": "Testimonial Paging Html",
+        "description": "Testimonial pagination by page number through a get parameter. Returns rendered page HTML.\n\nThe testimonial paging endpoint is protected by a referer header requirement.\nThe expected values are:\n```\n{\n    \"Referer\": \"https://web-scraping.dev/testimonials\",\n}\n```",
+        "operationId": "testimonial_paging_html_api_testimonials_get",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "referer",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Referer header to validate",
+              "title": "Referer"
+            },
+            "description": "Referer header to validate",
+            "example": "https://web-scraping.dev/"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/download-file": {
+      "post": {
+        "summary": "Download File Post",
+        "description": "Returns a PDF file with Content-Disposition header set to attachment.\nThis simulates a form submission that triggers a file download in a new tab.\nThe file returned is a sample PDF document.",
+        "operationId": "download_file_post_api_download_file_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai-content-obfuscation": {
+      "get": {
+        "summary": "Ai Content Obfuscation",
+        "description": "Returns text with hidden Unicode characters designed to confuse AI/LLM scrapers.\n\nThis endpoint demonstrates a common anti-AI scraping technique where content\nis obfuscated using invisible Unicode characters (zero-width spaces,\ninvisible separators, etc.) mixed with visible content.\n\nThe challenge is to extract only the visible cipher from the obfuscated text.\nAI models often struggle with these invisible characters during text processing.",
+        "operationId": "ai_content_obfuscation_api_ai_content_obfuscation_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/login": {
+      "post": {
+        "summary": "Login Post",
+        "description": "Mocks formdata based login. If correct username and password is provided response with\n`Set-Cookie` header of value `auth=user123-secret-token` will be returned which will grant access\nto [/auth/login](/auth/login) html page.\n\nCredentials:\n    username=user123\n    password=password",
+        "operationId": "login_post_api_login_post",
+        "parameters": [
+          {
+            "name": "referer",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Referer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_login_post_api_login_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/logout": {
+      "get": {
+        "summary": "Logout Get",
+        "description": "Will logout from the current login by clearing `auth` cookie",
+        "operationId": "logout_get_api_logout_get",
+        "parameters": [
+          {
+            "name": "referer",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Referer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/password-manager-test/login": {
+      "post": {
+        "summary": "Password Manager Test Login",
+        "operationId": "password_manager_test_login_password_manager_test_login_post",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_password_manager_test_login_password_manager_test_login_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/password-manager-test/passkey/register/begin": {
+      "post": {
+        "summary": "Password Manager Test Passkey Register Begin",
+        "description": "Hand the page a fresh challenge + user info for\nnavigator.credentials.create(). This is the *registration* flow —\na click on this triggers Chrome / the active passkey provider\n(1Password extension, Touch ID, etc.) to offer \"save this passkey\".\n\nThe server doesn't persist anything beyond a short-lived challenge\ncookie used by /register/complete to verify the round-trip.",
+        "operationId": "password_manager_test_passkey_register_begin_password_manager_test_passkey_register_begin_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/password-manager-test/passkey/register/complete": {
+      "post": {
+        "summary": "Password Manager Test Passkey Register Complete",
+        "description": "Acknowledge the registration. The server doesn't actually persist\nthe public key in this fixture — that's not what we're testing. We\njust confirm the page received a credentialId and the challenge\nround-tripped, then let the page show success. The real proof is\nthat *some* authenticator (1Password, Touch ID, the virtual\nauthenticator under CDP) actually performed the attestation\nceremony — which it only does if it was offered the save prompt\nand accepted it.",
+        "operationId": "password_manager_test_passkey_register_complete_password_manager_test_passkey_register_complete_post",
+        "parameters": [
+          {
+            "name": "pm_test_register_challenge",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Pm Test Register Challenge"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_password_manager_test_passkey_register_complete_password_manager_test_passkey_register_complete_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/password-manager-test/passkey/begin": {
+      "post": {
+        "summary": "Password Manager Test Passkey Begin",
+        "description": "Hand the page a fresh challenge for navigator.credentials.get().\n\nThe challenge is also stored in a short-lived cookie so the /complete\nendpoint can verify the assertion was signed over the same value.",
+        "operationId": "password_manager_test_passkey_begin_password_manager_test_passkey_begin_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/password-manager-test/passkey/complete": {
+      "post": {
+        "summary": "Password Manager Test Passkey Complete",
+        "description": "Best-effort verification that the page returned an assertion matching\nour hardcoded credential. We do NOT verify the signature here — the goal\nis to drive the CDP flow, not reimplement WebAuthn server validation.\n\nReal RPs would verify clientDataJSON, authenticatorData, and signature\nagainst the stored public key. For the test fixture we only check the\ncredentialId matches the hardcoded value and the challenge round-trips.",
+        "operationId": "password_manager_test_passkey_complete_password_manager_test_passkey_complete_post",
+        "parameters": [
+          {
+            "name": "pm_test_challenge",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Pm Test Challenge"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_password_manager_test_passkey_complete_password_manager_test_passkey_complete_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/password-manager-test/credential.json": {
+      "get": {
+        "summary": "Password Manager Test Credential Export",
+        "description": "Hand back the hardcoded test credential as JSON.\n\nTests fetch this and feed it into the WebAuthn virtual authenticator\nvia PasswordManager.providePasskey (or the underlying WebAuthn CDP\ndomain). The credential is intentionally weak and public — it exists\nonly for end-to-end testing.",
+        "operationId": "password_manager_test_credential_export_password_manager_test_credential_json_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Body_login_post_api_login_post": {
+        "properties": {
+          "username": {
+            "type": "string",
+            "title": "Username"
+          },
+          "password": {
+            "type": "string",
+            "title": "Password"
+          }
+        },
+        "type": "object",
+        "required": [
+          "username",
+          "password"
+        ],
+        "title": "Body_login_post_api_login_post"
+      },
+      "Body_password_manager_test_login_password_manager_test_login_post": {
+        "properties": {
+          "username": {
+            "type": "string",
+            "title": "Username"
+          },
+          "password": {
+            "type": "string",
+            "title": "Password"
+          }
+        },
+        "type": "object",
+        "required": [
+          "username",
+          "password"
+        ],
+        "title": "Body_password_manager_test_login_password_manager_test_login_post"
+      },
+      "Body_password_manager_test_passkey_complete_password_manager_test_passkey_complete_post": {
+        "properties": {
+          "challenge": {
+            "type": "string",
+            "title": "Challenge"
+          },
+          "credential_id": {
+            "type": "string",
+            "title": "Credential Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "challenge",
+          "credential_id"
+        ],
+        "title": "Body_password_manager_test_passkey_complete_password_manager_test_passkey_complete_post"
+      },
+      "Body_password_manager_test_passkey_register_complete_password_manager_test_passkey_register_complete_post": {
+        "properties": {
+          "challenge": {
+            "type": "string",
+            "title": "Challenge"
+          },
+          "credential_id": {
+            "type": "string",
+            "title": "Credential Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "challenge",
+          "credential_id"
+        ],
+        "title": "Body_password_manager_test_passkey_register_complete_password_manager_test_passkey_register_complete_post"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "PagePaging": {
+        "properties": {
+          "page": {
+            "type": "integer",
+            "title": "Page",
+            "description": "The page number to return, max 5",
+            "default": 1
+          },
+          "order": {
+            "type": "string",
+            "enum": [
+              "asc",
+              "desc"
+            ],
+            "title": "Order",
+            "description": "Sort order. This is useful for getting around paging limit of 25 products (total is 28)",
+            "default": "asc"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "apparel",
+                  "consumables",
+                  "household"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category",
+            "description": "Filter by category"
+          }
+        },
+        "type": "object",
+        "title": "PagePaging"
+      },
+      "PagingPage": {
+        "properties": {
+          "order": {
+            "type": "string",
+            "enum": [
+              "asc",
+              "desc"
+            ],
+            "title": "Order"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "apparel",
+                  "consumables",
+                  "houshold"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "total_results": {
+            "type": "integer",
+            "title": "Total Results"
+          },
+          "next_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Url"
+          },
+          "results": {
+            "items": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Product"
+                },
+                {
+                  "$ref": "#/components/schemas/Review"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Results"
+          },
+          "page_number": {
+            "type": "integer",
+            "title": "Page Number"
+          },
+          "page_size": {
+            "type": "integer",
+            "title": "Page Size"
+          },
+          "page_total": {
+            "type": "integer",
+            "title": "Page Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "order",
+          "category",
+          "total_results",
+          "next_url",
+          "results",
+          "page_number",
+          "page_size",
+          "page_total"
+        ],
+        "title": "PagingPage"
+      },
+      "Product": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "sku": {
+            "type": "string",
+            "title": "Sku"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "price": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Price"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "thumbnail": {
+            "type": "string",
+            "title": "Thumbnail"
+          },
+          "images": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Images"
+          },
+          "features": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Features"
+          },
+          "variants": {
+            "items": {
+              "$ref": "#/components/schemas/ProductVariant"
+            },
+            "type": "array",
+            "title": "Variants"
+          },
+          "publish_date": {
+            "type": "string",
+            "title": "Publish Date"
+          },
+          "category": {
+            "type": "string",
+            "title": "Category"
+          },
+          "reviews": {
+            "items": {
+              "$ref": "#/components/schemas/Review"
+            },
+            "type": "array",
+            "title": "Reviews"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "sku",
+          "title",
+          "price",
+          "description",
+          "thumbnail",
+          "images",
+          "features",
+          "variants",
+          "publish_date",
+          "category",
+          "reviews"
+        ],
+        "title": "Product"
+      },
+      "ProductQuery": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "title": "ProductQuery"
+      },
+      "ProductVariant": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "stock": {
+            "type": "integer",
+            "title": "Stock"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "images": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Images"
+          },
+          "color": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Color"
+          },
+          "price": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Price"
+          },
+          "price_full": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price Full"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "stock",
+          "name",
+          "images",
+          "color",
+          "price",
+          "price_full"
+        ],
+        "title": "ProductVariant"
+      },
+      "Review": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "rating": {
+            "type": "integer",
+            "title": "Rating"
+          },
+          "date": {
+            "type": "string",
+            "title": "Date"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "text",
+          "rating",
+          "date"
+        ],
+        "title": "Review"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}
